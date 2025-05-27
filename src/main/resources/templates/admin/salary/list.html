@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>工资管理</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+        }
+        .layui-form {
+            margin-top: 15px;
+        }
+        .layui-table-tool {
+            padding: 10px 15px;
+        }
+        .layui-table-tool-temp {
+            padding-right: 0;
+        }
+        .layui-table-cell {
+            height: auto;
+            line-height: 28px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-card">
+        <div class="layui-card-header">工资管理</div>
+        <div class="layui-card-body">
+            <!-- 搜索表单 -->
+            <form class="layui-form" lay-filter="searchForm">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">员工姓名</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="realName" placeholder="请输入员工姓名" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn" lay-submit lay-filter="searchSubmit">搜索</button>
+                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- 数据表格 -->
+            <table id="salaryTable" lay-filter="salaryTable"></table>
+        </div>
+    </div>
+
+    <!-- 表格工具栏模板 -->
+    <script type="text/html" id="tableToolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="add">添加工资记录</button>
+        </div>
+    </script>
+
+    <!-- 表格行工具栏模板 -->
+    <script type="text/html" id="tableBar">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['table', 'form', 'layer'], function(){
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var $ = layui.$;
+            
+            // 初始化表格
+            table.render({
+                elem: '#salaryTable',
+                url: '/salary/getList',
+                toolbar: '#tableToolbar',
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'sid', title: 'ID', width: 80, sort: true},
+                    {field: 'user.realName', title: '员工姓名', templet: function(d){
+                        return d.user ? d.user.realName : '';
+                    }},
+                    {field: 'baseSalary', title: '基本工资', width: 120},
+                    {field: 'bonus', title: '奖金', width: 120},
+                    {field: 'deduction', title: '扣除', width: 120},
+                    {field: 'paymentDate', title: '发放日期', width: 180},
+                    {field: 'remarks', title: '备注'},
+                    {title: '操作', toolbar: '#tableBar', width: 150, fixed: 'right'}
+                ]],
+                page: true,
+                limit: 10,
+                limits: [10, 20, 50, 100]
+            });
+            
+            // 监听搜索提交
+            form.on('submit(searchSubmit)', function(data){
+                table.reload('salaryTable', {
+                    where: data.field,
+                    page: {curr: 1}
+                });
+                return false;
+            });
+            
+            // 监听工具条
+            table.on('toolbar(salaryTable)', function(obj){
+                if(obj.event === 'add'){
+                    layer.open({
+                        type: 2,
+                        title: '添加工资记录',
+                        content: '/salary/toAdd',
+                        area: ['800px', '600px'],
+                        maxmin: true
+                    });
+                }
+            });
+            
+            // 监听行工具事件
+            table.on('tool(salaryTable)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'del'){
+                    layer.confirm('确定删除这条工资记录吗？', function(index){
+                        $.ajax({
+                            url: '/salary/delete/' + data.sid,
+                            type: 'POST',
+                            success: function(res){
+                                if(res.code === 0){
+                                    layer.msg('删除成功');
+                                    obj.del();
+                                } else {
+                                    layer.msg('删除失败：' + res.msg);
+                                }
+                            }
+                        });
+                        layer.close(index);
+                    });
+                } else if(obj.event === 'edit'){
+                    layer.open({
+                        type: 2,
+                        title: '编辑工资记录',
+                        content: '/salary/toEdit/' + data.sid,
+                        area: ['800px', '600px'],
+                        maxmin: true
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

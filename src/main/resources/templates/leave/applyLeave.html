@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>请假申请-OA办公系统</title>
+  <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+  <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+  <link th:href="@{/css/leave.css}" rel="stylesheet">
+</head>
+<body>
+<div class="layui-fluid">
+  <div class="layui-card">
+    <!-- 导航链接 -->
+    <div class="layui-card-header">
+      <a href="/leave/toList" class="layui-btn layui-btn-primary layui-btn-sm">
+        <i class="layui-icon layui-icon-list"></i> 查看请假记录
+      </a>
+    </div>
+
+    <!-- 请假申请表单 -->
+    <div class="layui-card-body">
+      <form class="layui-form" lay-filter="leaveForm" style="padding: 20px;">
+        <div class="layui-form-item">
+          <label class="layui-form-label">请假类型</label>
+          <div class="layui-input-block">
+            <select name="type" lay-verify="required">
+              <option value="">请选择类型</option>
+              <option value="年假">年假</option>
+              <option value="病假">病假</option>
+              <option value="事假">事假</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="layui-form-item">
+          <label class="layui-form-label">开始时间</label>
+          <div class="layui-input-block">
+            <input type="datetime-local" name="startDate" lay-verify="required" class="layui-input">
+          </div>
+        </div>
+
+        <div class="layui-form-item">
+          <label class="layui-form-label">结束时间</label>
+          <div class="layui-input-block">
+            <input type="datetime-local" name="endDate" lay-verify="required" class="layui-input">
+          </div>
+        </div>
+
+        <div class="layui-form-item">
+          <label class="layui-form-label">请假原因</label>
+          <div class="layui-input-block">
+            <textarea name="reason" placeholder="请输入详细原因" lay-verify="required" class="layui-textarea"></textarea>
+          </div>
+        </div>
+
+        <div class="layui-form-item">
+          <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="submitBtn">立即提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script>
+  layui.use(['form', 'layer'], function(){
+    var form = layui.form,
+            layer = layui.layer,
+            $ = layui.$;
+
+    // 表单提交
+    form.on('submit(submitBtn)', function(data){
+      var btn = $(this).find('button[lay-filter="submitBtn"]');
+      btn.prop('disabled', true); // 禁用按钮
+      var field = data.field; //获取提交的字段
+      console.log(field);
+      $.ajax({
+        url: '/leave/add',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(field),
+        success: function(data) {
+          console.log(data);
+          if(data.code === 0) {
+            layer.msg('添加成功', {icon: 1});
+            setTimeout(function(){
+              window.location.href ='/leave/toList';
+            }, 1500);
+          } else {
+            layer.msg("添加失败", {icon: 2});
+          }
+        },
+        complete: function() {
+          btn.prop('disabled', false); // 请求完成后恢复按钮
+        }
+      });
+      return false;
+    });
+  });
+</script>
+</body>
+</html>

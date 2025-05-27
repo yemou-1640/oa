@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yemou.oa.dao.LeaveMapper">
+    
+    <!-- 根据状态统计请假申请数量 -->
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM o_leave
+        WHERE lstatus = #{lstatus}
+    </select>
+    
+    <!-- 根据申请人姓名模糊查询待审批的请假申请 -->
+    <select id="findByUserNameAndStatus" resultType="com.yemou.oa.pojo.Leave">
+        SELECT l.*, u.realName
+        FROM o_leave l
+        LEFT JOIN o_user u ON l.uid = u.uid
+        WHERE l.lstatus = #{lstatus}
+        <if test="realName != null and realName != ''">
+            AND u.realName LIKE CONCAT('%', #{realName}, '%')
+        </if>
+        ORDER BY l.created DESC
+    </select>
+    
+</mapper> 

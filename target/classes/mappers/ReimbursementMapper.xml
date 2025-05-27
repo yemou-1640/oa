@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yemou.oa.dao.ReimbursementMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yemou.oa.pojo.Reimbursement">
+        <result column="rid" property="rid" />
+        <result column="amount" property="amount" />
+        <result column="type" property="type" />
+        <result column="description" property="description" />
+        <result column="rstatus" property="rstatus" />
+        <result column="approvedByUserId" property="approvedByUserId" />
+        <result column="approvalTime" property="approvalTime" />
+        <result column="created" property="created" />
+        <result column="updated" property="updated" />
+    </resultMap>
+
+
+    <!-- 根据状态统计报销申请数量 -->
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM o_reimbursement
+        WHERE rstatus = #{rstatus}
+    </select>
+</mapper>

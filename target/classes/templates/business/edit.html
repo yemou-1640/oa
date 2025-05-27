@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑出差申请</title>
+    <link rel="stylesheet" th:href="@{/layuiadmin/layui/css/layui.css}">
+    <link rel="stylesheet" th:href="@{/layuiadmin/style/admin.css}">
+    <style>
+        .layui-form {
+            padding: 20px 30px 0 0;
+        }
+        .layui-form-label {
+            width: 120px;
+        }
+        .layui-input-block {
+            margin-left: 150px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layui-form" lay-filter="businessForm">
+    <input type="hidden" name="tid" th:value="${business.tid}">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">申请ID</label>
+        <div class="layui-input-inline">
+            <input type="text" class="layui-input" th:value="${business.tid}" readonly>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">出差地点</label>
+        <div class="layui-input-block">
+            <input type="text" name="destination" lay-verify="required"
+                   placeholder="请输入出差地点" class="layui-input" 
+                   th:value="${business.destination}">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">开始时间</label>
+        <div class="layui-input-block">
+            <input type="text" name="startDate" id="startDate"
+                   lay-verify="required|datetime"
+                   class="layui-input"
+                   placeholder="请选择开始时间"
+                   th:value="${#dates.format(business.startDate, 'yyyy-MM-dd HH:mm')}">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">结束时间</label>
+        <div class="layui-input-block">
+            <input type="text" name="endDate" id="endDate"
+                   lay-verify="required|datetime|endDate"
+                   class="layui-input"
+                   placeholder="请选择结束时间"
+                   th:value="${#dates.format(business.endDate, 'yyyy-MM-dd HH:mm')}">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn layuiadmin-btn-list layui-btn-normal"
+                    lay-submit
+                    lay-filter="submitBtn">提交修改</button>
+            <button type="button"
+                    class="layui-btn layuiadmin-btn-list layui-btn-primary"
+                    onclick="parent.layer.closeAll()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script>
+    layui.use(['form', 'laydate'], function(){
+        var form = layui.form,
+            laydate = layui.laydate,
+            layer = layui.layer,
+            $ = layui.jquery;
+
+        // 初始化日期时间选择器（精确到分钟）
+        laydate.render({
+            elem: '#startDate',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm'
+        });
+
+        laydate.render({
+            elem: '#endDate',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm'
+        });
+
+        // 自定义验证规则
+        form.verify({
+            datetime: function(value){
+                if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(value)){
+                    return '日期格式不正确（yyyy-MM-dd HH:mm）';
+                }
+            },
+            endDate: function(value){
+                var startDate = new Date($('#startDate').val().replace(/-/g,'/'));
+                var endDate = new Date(value.replace(/-/g,'/'));
+                if(endDate <= startDate){
+                    return '结束时间必须晚于开始时间';
+                }
+            }
+        });
+
+        // 表单提交
+        form.on('submit(submitBtn)', function(data){
+            var field = data.field;
+            
+            // 转换日期为时间戳
+            var startDate = new Date(field.startDate.replace(/-/g, '/')).getTime();
+            var endDate = new Date(field.endDate.replace(/-/g, '/')).getTime();
+            
+            field.startDate = startDate;
+            field.endDate = endDate;
+            
+            $.ajax({
+                url: '/business/edit',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(field),
+                success: function(data) {
+                    if(data.code === 0) {
+                        // 显示更显眼的成功提示
+                        layer.msg('出差申请修改成功', {
+                            icon: 1,
+                            time: 2000, // 显示2秒
+                            shade: [0.3, '#000']
+                        }, function(){
+                            // 提示消失后执行刷新和关闭
+                            parent.layui.table.reload('businessTable');
+                            parent.layer.closeAll();
+                            // 通知父页面显示顶部消息通知
+                            parent.layer.msg('出差申请已成功更新', {
+                                offset: 't',
+                                icon: 1
+                            });
+                        });
+                    } else {
+                        layer.msg('更新失败：' + (data.msg || '未知错误'), {icon: 2});
+                    }
+                },
+                error: function(xhr) {
+                    layer.msg('请求失败：' + xhr.statusText, {icon: 2});
+                }
+            });
+            return false;
+        });
+    });
+</script>
+
+</body>
+</html> 

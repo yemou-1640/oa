@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>出差待审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .layui-card-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .layui-card-body {
+            padding: 15px;
+        }
+        .layui-table-tool {
+            padding: 10px 15px;
+        }
+        .layui-badge {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">出差待审批
+                <a href="/admin/toPending" class="layui-btn layui-btn-primary layui-btn-sm">
+                    返回
+                </a>
+            </div>
+            <div class="layui-card-body">
+                <!-- 搜索栏 -->
+                <form class="layui-form" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请人</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="realName" placeholder="请输入申请人" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn" lay-submit lay-filter="searchForm">
+                                <i class="layui-icon layui-icon-search"></i> 搜索
+                            </button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- 数据表格 -->
+                <table id="businessTable" lay-filter="businessTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作列模板 -->
+    <script type="text/html" id="operationBar">
+        <a class="layui-btn layui-btn-xs" lay-event="approve">审批</a>
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+
+    <!-- 状态列模板 -->
+    <script type="text/html" id="statusTpl">
+        <span class="layui-badge layui-bg-orange">审核中</span>
+    </script>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['table', 'form', 'util', 'layer'], function(){
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var util = layui.util;
+            var $ = layui.$;
+            
+            // 初始化表格
+            table.render({
+                elem: '#businessTable',
+                url: '/business/pendingList',
+                page: true,
+                toolbar: true,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'tid', title: 'ID', width: 100, sort: true},
+                    {field: 'user.realName', title: '申请人', width: 100, templet: function(d) {
+                        return d.user ? d.user.realName : '';
+                    }},
+                    {field: 'destination', title: '目的地', width: 150},
+                    {field: 'startDate', title: '开始时间', width: 160, sort: true, templet: function(d) {
+                        return util.toDateString(d.startDate, 'yyyy-MM-dd HH:mm');
+                    }},
+                    {field: 'endDate', title: '结束时间', width: 160, sort: true, templet: function(d) {
+                        return util.toDateString(d.endDate, 'yyyy-MM-dd HH:mm');
+                    }},
+                    {field: 'reason', title: '出差事由', width: 220},
+                    {field: 'status', title: '状态', width: 100, templet: '#statusTpl'},
+                    {title: '操作', toolbar: '#operationBar', width: 180, fixed: 'right'}
+                ]]
+            });
+            
+            // 监听搜索表单提交
+            form.on('submit(searchForm)', function(data){
+                table.reload('businessTable', {
+                    where: data.field,
+                    page: {
+                        curr: 1
+                    }
+                });
+                return false;
+            });
+            
+            // 监听工具条
+            table.on('tool(businessTable)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'approve'){
+                    layer.open({
+                        type: 2,
+                        title: '审批出差申请',
+                        area: ['500px', '600px'],
+                        content: '/business/toApprove/' + data.tid,
+                        end: function(){
+                            // 刷新表格
+                            table.reload('businessTable');
+                        }
+                    });
+                } else if(obj.event === 'edit'){
+                    layer.open({
+                        type: 2,
+                        title: '详情编辑',
+                        area: ['500px', '600px'],
+                        content: '/business/toPenEdit/' + obj.data.tid
+                    });
+                } else if(obj.event === 'del'){
+                    layer.confirm('确认删除该申请吗？', function(index){
+                        $.ajax({
+                            type: 'post',
+                            url: '/business/delete/' + data.tid,
+                            success: function(res){
+                                if(res.code === 0){
+                                    table.reload('businessTable');
+                                    layer.msg('删除成功');
+                                } else {
+                                    layer.msg('删除失败: ' + res.msg);
+                                }
+                            }
+                        });
+                        layer.close(index);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

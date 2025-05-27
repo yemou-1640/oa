@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>出差记录-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .layui-table-cell { height: auto; padding: 5px 15px; }
+        .status-approved { background: #009688; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-pending { background: #FFB800; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-rejected { background-color: #FF5722; color: white; padding: 2px 8px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <a href="/business/toBusiness" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-form"></i> 返回申请
+            </a>
+        </div>
+
+        <div class="layui-card-body">
+            <table class="layui-table" lay-filter="businessTable" id="businessTable">
+
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 时间段模板 -->
+<script type="text/html" id="timeTpl">
+    {{ layui.util.toDateString(d.startTime, 'yyyy-MM-dd HH:mm') }} 至 {{ layui.util.toDateString(d.endTime, 'yyyy-MM-dd HH:mm') }}
+</script>
+
+<!-- 状态模板 -->
+<script type="text/html" id="statusTpl">
+    {{# if(d.bstatus === '审核中'){ }}
+    <span class="status-pending">审核中</span>
+    {{# } else if(d.bstatus === '通过'){ }}
+    <span class="status-approved">通过</span>
+    {{# } else if(d.bstatus === '驳回'){ }}
+    <span class="status-rejected">驳回</span>
+    {{# } }}
+</script>
+
+
+<!-- 操作列模板修改为编辑按钮 -->
+<script type="text/html" id="operateBar">
+    {{# if(d.bstatus === 'PENDING' || d.bstatus === '审核中'){ }}
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>  
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    {{# } }}
+</script>
+
+<!-- 新增编辑表单模板 -->
+<script type="text/html" id="editFormTpl">
+    <form class="layui-form" lay-filter="editBusinessForm" style="padding: 20px;">
+        <input type="hidden" name="tid" value="{{d.tid}}">
+        <div class="layui-form-item">
+            <label class="layui-form-label">出差地点</label>
+            <div class="layui-input-block">
+                <input type="text" name="destination" lay-verify="required"
+                       placeholder="请输入出差地点" class="layui-input" value="{{d.destination}}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">开始时间</label>
+            <div class="layui-input-block">
+                <input type="datetime-local" name="startDate" lay-verify="required"
+                       class="layui-input" value="{{ layui.util.toDateString(d.startDate, 'yyyy-MM-ddTHH:mm') }}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">结束时间</label>
+            <div class="layui-input-block">
+                <input type="datetime-local" name="endDate" lay-verify="required"
+                       class="layui-input" value="{{ layui.util.toDateString(d.endDate, 'yyyy-MM-ddTHH:mm') }}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit>提交修改</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+</script>
+
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.use(['table', 'util', 'layer','form'], function(){
+        var table = layui.table,
+            util = layui.util,
+            layer = layui.layer,
+            form = layui.form,
+            $ = layui.$,
+        laytpl=layui.laytpl;
+
+        // 初始化表格
+        table.render({
+            elem: '#businessTable',
+            url: '/business/getList',
+            page: true,
+            request: {
+                pageName: 'page',
+                limitName: 'limit'
+            },
+            cols: [[
+                {field: 'tid', title: 'ID', width: 80, sort: true},
+
+                {field: 'destination', title: '出差地点'},
+                {field: 'startDate', title: '开始时间', templet: function(d){
+                        return util.toDateString(d.startDate, 'yyyy-MM-dd HH:mm');
+                    }, sort: true},
+                {field: 'endDate', title: '结束时间', templet: function(d){
+                        return util.toDateString(d.endDate, 'yyyy-MM-dd HH:mm');
+                    }, sort: true},
+
+                {field: 'bstatus', title: '状态', templet: '#statusTpl'},
+                {field: 'created', title: '申请时间',templet: function(d){
+                        return util.toDateString(d.created, 'yyyy-MM-dd HH:mm');
+                    }, sort: true},
+                {fixed: 'right', title: '操作', toolbar: '#operateBar', width: 150}
+            ]]
+        });
+
+        // 监听工具条操作
+        table.on('tool(businessTable)', function(obj){
+            var data = obj.data;
+            console.log("edit for:" + obj.data.tid);
+            if(obj.event === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑出差申请',
+                    content: '/business/toEdit/' + data.tid,
+                    area: ['600px', '450px'],
+                    success: function(layero, index){
+                        console.log('加载编辑表单');
+                    }
+                });
+            } else if(obj.event === 'del'){
+                layer.confirm('确认删除该记录吗？', function () {
+                    $.ajax({
+                        type: 'post',
+                        url: '/business/delete/' + data.tid,
+                        success: function (res) {
+                            if (res.code === 0) {
+                                table.reload('businessTable');
+                                layer.msg('删除成功');
+                            } else {
+                                layer.msg(res.msg || '删除失败', {icon: 2});
+                            }
+                        },
+                        error: function() {
+                            layer.msg('网络错误，请重试', {icon: 2});
+                        }
+                    });
+                });
+            } else if(obj.event === 'cancel'){
+                layer.confirm('确认撤销该申请吗？', function(){
+                    $.post('/business/cancel/' + data.id, function(res){
+                        if(res.code === 0) {
+                            layer.msg('已撤销', {icon: 1});
+                            table.reload('businessTable');
+                        }
+                    });
+                });
+            }
+        });
+        // 新增表单提交监听
+        form.on('submit(editBusinessForm)', function(formData){
+            var field = formData.field;
+            console.log(field)
+            // 转换时间格式
+            field.startDate = new Date(field.startDate).getTime();
+            field.endDate = new Date(field.endDate).getTime();
+
+            $.ajax({
+                url: '/business/edit',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(field),
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('修改成功', {icon: 1});
+                        table.reload('businessTable');
+                        layer.closeAll();
+                    }else{
+                        layer.msg(res.msg || "修改失败", {icon: 2});
+                    }
+                },
+                error: function(){
+                    layer.msg("请求失败，请检查网络", {icon: 2});
+                }
+            });
+            return false; // 阻止表单默认提交
+        });
+    });
+</script>
+</body>
+</html>

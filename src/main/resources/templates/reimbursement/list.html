@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>报销记录-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <link th:href="@{/css/reimbursement.css}" rel="stylesheet">
+    <style>
+        .layui-table-cell { height: auto; padding: 5px 15px; }
+        .status-approved { background: #009688; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-pending { background: #FFB800; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-rejected { background-color: #FF5722; color: white; padding: 2px 8px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <a href="/reimbursement/toReim" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-form"></i> 返回申请
+            </a>
+        </div>
+
+        <div class="layui-card-body">
+            <table class="layui-table" lay-filter="reimbTable" id="reimbTable">
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 状态模板 -->
+<script type="text/html" id="statusTpl">
+    {{# if(d.rstatus === '审核中'){ }}
+    <span class="status-pending">审核中</span>
+    {{# } else if(d.rstatus === '通过'){ }}
+    <span class="status-approved">通过</span>
+    {{# } else if(d.rstatus === '驳回'){ }}
+    <span class="status-rejected">驳回</span>
+    {{# } }}
+</script>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="operateBar">
+    {{# if(d.rstatus === 'PENDING' || d.rstatus === '审核中'){ }}
+    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    {{# } }}
+</script>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.use(['table', 'util', 'layer'], function(){
+        var table = layui.table,
+            util = layui.util,
+            layer = layui.layer,
+            $ = layui.$;
+
+        // 初始化表格
+        table.render({
+            elem: '#reimbTable',
+            url: '/reimbursement/getList',
+            page: true,
+            request: {
+                pageName: 'page',
+                limitName: 'limit'
+            },
+            cols: [[
+                {field: 'created', title: '申请时间', sort: true, templet: function(d){
+                        return util.toDateString(d.created, 'yyyy-MM-dd HH:mm');
+                    }},
+                {field: 'type', title: '类型'},
+                {field: 'amount', title: '金额', templet: function(d){
+                        return d.amount + '元';
+                    }},
+                {field: 'description', title: '信息'},
+                {field: 'rstatus', title: '状态', templet: '#statusTpl'},
+                {fixed: 'right', title: '操作', toolbar: '#operateBar', width: 150}
+            ]]
+        });
+
+        // 监听工具条操作
+        table.on('tool(reimbTable)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑报销申请',
+                    content: '/reimbursement/toEdit/' + data.rid,
+                    area: ['600px', '450px'],
+                    success: function(layero, index){
+                        console.log('加载编辑表单');
+                    }
+                });
+            } else if(obj.event === 'del'){
+                layer.confirm('确认删除该记录吗？', function () {
+                    $.ajax({
+                        type: 'post',
+                        url: '/reimbursement/delete/' + data.rid,
+                        success: function (res) {
+                            if (res.code === 0) {
+                                table.reload('reimbTable');
+                                layer.msg('删除成功');
+                            } else {
+                                layer.msg(res.msg || '删除失败', {icon: 2});
+                            }
+                        },
+                        error: function() {
+                            layer.msg('网络错误，请重试', {icon: 2});
+                        }
+                    });
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>

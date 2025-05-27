@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .layui-table-cell {
+            height: auto;
+            padding: 5px 15px;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: white;
+        }
+        .status-active { background-color: #009688; }
+        .status-inactive { background-color: #FF5722; }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <a href="javascript:;" class="layui-btn layui-btn-primary layui-btn-sm" id="btnRefresh">
+                <i class="layui-icon layui-icon-refresh"></i> 刷新
+            </a>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="layui-card-body">
+            <div class="layui-form layuiadmin-card-header-auto">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">用户名：</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="search_name" placeholder="请输入用户名" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layuiadmin-btn-list" id="btnSearch">
+                            <i class="layui-icon layui-icon-search"></i>查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <table id="userTable" lay-filter="userTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layuiadmin-btn-list" lay-event="add">添加用户</button>
+    </div>
+</script>
+
+<script type="text/html" id="rowBar">
+    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="detail"><i class="layui-icon layui-icon-form"></i>详情</a>
+    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+<!-- 用户详情模板 -->
+<script type="text/html" id="userDetailTpl">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <div class="layui-form">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">用户ID：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.uid }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">用户名：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.name }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">姓名：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.realName }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">部门：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.department }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">职位：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.position }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">入职日期：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ layui.util.toDateString(d.hireDate, 'yyyy-MM-dd HH:mm') }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.ustatus }}</div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">权限：</label>
+                    <div class="layui-input-block">
+                        <div class="layui-form-mid">{{ d.pid }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.config({
+        base: '/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['table', 'form','util', 'laytpl'], function(){
+        var table = layui.table,
+            util=layui.util,
+            laytpl = layui.laytpl,
+            form = layui.form,
+            layer = layui.layer,
+            $ = layui.$;
+
+        // 初始化表格
+        table.render({
+            elem: '#userTable',
+            url: '/admin/user/getList',
+            page: true,
+            toolbar: '#toolbarDemo',
+            cols: [
+                [
+                    {field: 'uid', title: 'ID', width: 100, sort: true},
+                    {field: 'name', title: '用户名', width: 140},
+                    {field: 'realName',title: '姓名',width: 140},
+                    {field: 'department', title: '部门', width: 140},
+                    {field: 'position', title: '职位', width: 140},
+                    {field: 'hireDate', title: '入职日期', width: 200, templet: function (d) {
+                            return util.toDateString(d.hireDate, 'yyyy-MM-dd HH:mm');
+                    }},
+                    {field: 'ustatus', title: '状态', width: 140},
+                    {fixed: 'right', title: '操作', toolbar: '#rowBar', width: 240}
+                ]
+            ]
+        });
+
+        // 工具栏事件
+        table.on('toolbar(userTable)', function(obj){
+            if(obj.event === 'add'){
+                layer.open({
+                    type: 2,
+                    title: '添加用户',
+                    area: ['600px', '500px'],
+                    content: '/admin/user/toAdd',
+                    success: function(layero, index){
+                        // 弹层成功回调
+                    }
+                });
+            }
+        });
+
+        // 行工具事件
+        table.on('tool(userTable)', function(obj){
+            var data = obj.data;
+            console.log("edit for:"+obj.data.uid)
+            console.log(obj.data)
+            if(obj.event === 'detail'){
+                // 详情弹窗
+                var getTpl = document.getElementById('userDetailTpl').innerHTML;
+                laytpl(getTpl).render(data, function(html){
+                    layer.open({
+                        type: 1,
+                        title: '用户详情',
+                        area: ['600px', '500px'],
+                        content: html
+                    });
+                });
+            } else if(obj.event === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑用户',
+                    area: ['600px', '500px'],
+                    content: '/admin/user/toEdit/' + obj.data.uid
+                });
+            } else if(obj.event === 'del'){
+                // 删除逻辑
+                layer.confirm('确认删除该记录吗？', function () {
+                    $.ajax({
+                        type: 'post',
+                        url: '/admin/user/delete/' + data.uid, // ajax请求路径
+                        success: function (res) {
+                            console.log(res)
+                            if (res.code === 0) {
+                                table.reload('userTable');  // 删除后刷新表格
+                                layer.msg('删除成功');
+                            }
+                        }
+                    });
+                })
+            }
+        });
+
+        // 搜索功能
+        $('#btnSearch').click(function(){
+            doSearch();
+        });
+        
+        // 监听回车键
+        $('#search_name').keydown(function(e){
+            if(e.keyCode === 13){
+                doSearch();
+                return false; // 阻止默认行为
+            }
+        });
+        
+        // 搜索方法
+        function doSearch(){
+            var searchName = $('#search_name').val();
+            // 显示加载中
+            var loadIndex = layer.load(1, {shade: [0.1,'#fff']});
+            
+            table.reload('userTable', {
+                where: {
+                    name: searchName
+                },
+                page: {
+                    curr: 1 // 从第一页开始
+                },
+                done: function(){
+                    layer.close(loadIndex);
+                    // 搜索结果提示
+                    if(searchName) {
+                        layer.msg('查询"' + searchName + '"的结果');
+                    }
+                }
+            });
+        }
+
+        // 刷新功能
+        $('#btnRefresh').click(function(){
+            table.reload('userTable');
+        });
+    });
+</script>
+</body>
+</html>

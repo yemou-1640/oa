@@ -1,0 +1,154 @@
+/* 重置全局样式兼容 Layui */
+.layui-body {
+    margin-left: 200px;
+    padding: 15px;
+    background-color: #f5f7fa;
+    transition: margin-left 0.3s;
+    min-height: calc(100vh - 60px); /* 防止内容过短时底部留白 */
+}
+
+/* 容器样式与 content.html 统一 */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 4px; /* Layui 默认圆角 */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* 弱化阴影避免冲突 */
+}
+
+/* 表单标题与 Layui 风格一致 */
+.form-section h2 {
+    color: #393D49; /* Layui 主题深灰色 */
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e6e6e6; /* 替代原蓝色下划线 */
+    padding-bottom: 10px;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* 表单输入项适配 Layui 组件 */
+.form-group label {
+    color: #666;
+    font-weight: 400; /* Layui 标签不加粗 */
+    margin-bottom: 5px;
+}
+
+/*!* 下拉框样式 *!*/
+/*select {*/
+/*    width: 80%;*/
+/*    padding: 8px 12px;*/
+/*    border: 1px solid #e6e6e6;*/
+/*    border-radius: 2px;*/
+/*    background-color: white;*/
+/*    transition: border-color 0.3s;*/
+/*}*/
+
+/*select:focus {*/
+/*    border-color: #5FB878;*/
+/*    outline: none;*/
+/*}*/
+
+/*!* Layui下拉箭头适配 *!*/
+/*.layui-form-select .layui-edge {*/
+/*    right: 15px;*/
+/*}*/
+
+input[type="text"],
+input[type="datetime-local"],
+textarea {
+    width: 80%;
+    padding: 8px 12px;
+    border: 1px solid #e6e6e6; /* Layui 默认边框色 */
+    border-radius: 2px; /* Layui 默认直角 */
+    transition: border-color 0.3s;
+}
+
+input:focus, textarea:focus {
+    border-color: #5FB878 !important; /* Layui 主题绿色 */
+    box-shadow: none; /* 移除默认阴影 */
+}
+
+/* 按钮样式覆盖 */
+.btn-primary {
+    background-color: #5FB878 !important; /* Layui 主题绿色 */
+    border: none;
+    padding: 8px 25px;
+    border-radius: 2px;
+}
+
+.btn-primary:hover {
+    background-color: #4CAF50 !important; /* 悬停深绿色 */
+}
+
+/* 表格样式与 Layui 融合 */
+.records-table {
+    width: 100%;
+    margin-top: 20px;
+    border: 1px solid #e6e6e6; /* Layui 表格边框 */
+}
+
+.records-table th {
+    background-color: #f8f8f8 !important; /* Layui 表头背景色 */
+    color: #333;
+    font-weight: 500;
+    padding: 12px 15px !important;
+}
+
+.records-table td {
+    padding: 12px 15px !important;
+    color: #666;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+/* 操作链接颜色统一 */
+.record-link {
+    color: #5FB878 !important; /* 使用 Layui 主题绿色 */
+    text-decoration: none;
+}
+
+.record-link:hover {
+    color: #4CAF50 !important;
+    text-decoration: underline;
+}
+
+/* 状态标签圆角优化 */
+.status {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.status-approved {
+    background-color: #dff0d8 !important; /* Layui 成功色浅背景 */
+    color: #3c763d !important;
+}
+
+.status-pending {
+    background-color: #fcf8e3 !important; /* Layui 警告色浅背景 */
+    color: #8a6d3b !important;
+}
+
+/* 弹窗层样式适配 */
+.layui-layer-content {
+    border-radius: 2px !important; /* 直角风格 */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .layui-body {
+        margin-left: 0 !important; /* 侧边栏收起时全宽 */
+    }
+
+    .container {
+        padding: 10px;
+        box-shadow: none;
+    }
+
+    .records-table th,
+    .records-table td {
+        padding: 8px !important;
+        font-size: 14px;
+    }
+}

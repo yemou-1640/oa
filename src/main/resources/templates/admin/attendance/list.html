@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>考勤管理</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .layui-card-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .layui-card-body {
+            padding: 15px;
+        }
+        .layui-table-tool {
+            padding: 10px 15px;
+        }
+        .layui-badge {
+            padding: 5px 10px;
+        }
+        .detail-item {
+            margin-bottom: 15px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            margin-right: 10px;
+        }
+        .detail-value {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">考勤管理</div>
+            <div class="layui-card-body">
+                <!-- 搜索栏 -->
+                <form class="layui-form" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">姓名</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="realName" placeholder="请输入姓名" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn" lay-submit lay-filter="searchForm">
+                                <i class="layui-icon layui-icon-search"></i> 搜索
+                            </button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- 数据表格 -->
+                <table id="attendanceTable" lay-filter="attendanceTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作列模板 -->
+    <script type="text/html" id="operationBar">
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del">删除</a>
+    </script>
+
+    <!-- 考勤类型模板 -->
+    <script type="text/html" id="typeTpl">
+        {{#  if(d.type === '上班'){ }}
+            <span class="layui-badge layui-bg-blue">上班</span>
+        {{#  } else if(d.type === '下班'){ }}
+            <span class="layui-badge layui-bg-green">下班</span>
+        {{#  } }}
+    </script>
+
+    <!-- 详情模板 -->
+    <script type="text/html" id="detailTpl">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div class="detail-item">
+                    <span class="detail-label">姓名：</span>
+                    <span class="detail-value">{{d.user.realName}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">考勤类型：</span>
+                    <span class="detail-value">
+                        {{#  if(d.type === '上班'){ }}
+                            <span class="layui-badge layui-bg-blue">上班</span>
+                        {{#  } else if(d.type === '下班'){ }}
+                            <span class="layui-badge layui-bg-green">下班</span>
+                        {{#  } }}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">考勤时间：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.time, 'yyyy-MM-dd HH:mm:ss')}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">考勤日期：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.date, 'yyyy-MM-dd')}}</span>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['table', 'form', 'util', 'layer', 'laytpl'], function(){
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var util = layui.util;
+            var laytpl = layui.laytpl;
+            var $ = layui.$;
+            
+            // 初始化表格
+            table.render({
+                elem: '#attendanceTable',
+                url: '/attendance/getList',
+                page: true,
+                toolbar: true,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'aid', title: 'ID', width: 100, sort: true},
+                    {field: 'user.realName', title: '姓名', width: 100, templet: function(d) {
+                            return d.user ? d.user.realName : '';}},
+                    {field: 'type', title: '考勤类型', width: 100, templet: '#typeTpl'},
+                    {field: 'time', title: '考勤时间', width: 160, sort: true, templet: function (d) {
+                            return util.toDateString(d.time, 'yyyy-MM-dd HH:mm:ss');
+                        }},
+                    {field: 'date', title: '考勤日期', width: 120, sort: true, templet: function (d) {
+                            return util.toDateString(d.date, 'yyyy-MM-dd');
+                        }},
+                    {title: '操作', toolbar: '#operationBar', width: 150, fixed: 'right'}
+                ]],
+            });
+            
+            // 监听搜索表单提交
+            form.on('submit(searchForm)', function(data){
+                table.reload('attendanceTable', {
+                    where: data.field,
+                    page: {
+                        curr: 1
+                    }
+                });
+                return false;
+            });
+            
+            // 监听工具条
+            table.on('tool(attendanceTable)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'edit'){
+                    layer.open({
+                        type: 2,
+                        title: '详情编辑',
+                        area: ['500px', '600px'],
+                        content: '/attendance/toEdit/' + obj.data.aid
+                    });
+                } else if(obj.event === 'del'){
+                    layer.confirm('确定删除此考勤记录？', function(index){
+                        // 执行删除
+                        $.ajax({
+                            url: '/attendance/delete/' + data.aid,
+                            type: 'POST',
+                            success: function(res){
+                                if(res.code === 0){
+                                    layer.msg('删除成功');
+                                    obj.del();
+                                } else {
+                                    layer.msg('删除失败：' + res.msg);
+                                }
+                            },
+                            error: function(){
+                                layer.msg('删除失败，请稍后重试');
+                            }
+                        });
+                        layer.close(index);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

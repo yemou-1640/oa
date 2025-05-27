@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>请假已审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .layui-card-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .layui-card-body {
+            padding: 15px;
+        }
+        .layui-table-tool {
+            padding: 10px 15px;
+        }
+        .layui-badge {
+            padding: 5px 10px;
+        }
+        .detail-item {
+            margin-bottom: 15px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            margin-right: 10px;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .detail-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 2px;
+            color: #fff;
+        }
+        .detail-status.approved {
+            background-color: #5FB878;
+        }
+        .detail-status.rejected {
+            background-color: #FF5722;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">请假已审批列表
+                <a href="/admin/toCompleted" class="layui-btn layui-btn-primary layui-btn-sm">
+                    返回
+                </a>
+            </div>
+            <div class="layui-card-body">
+                <!-- 搜索栏 -->
+                <form class="layui-form" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请人</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="realName" placeholder="请输入申请人姓名" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn" lay-submit lay-filter="searchForm">
+                                <i class="layui-icon layui-icon-search"></i> 搜索
+                            </button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- 数据表格 -->
+                <table id="leaveTable" lay-filter="leaveTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作列模板 -->
+    <script type="text/html" id="operationBar">
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="view">查看</a>
+    </script>
+
+    <!-- 状态列模板 -->
+    <script type="text/html" id="statusTpl">
+        {{#  if(d.lstatus === '通过'){ }}
+            <span class="layui-badge layui-bg-green">通过</span>
+        {{#  } else if(d.lstatus === '驳回'){ }}
+            <span class="layui-badge layui-bg-red">驳回</span>
+        {{#  } }}
+    </script>
+
+    <!-- 请假类型模板 -->
+    <script type="text/html" id="typeTpl">
+        {{#  if(d.type === '事假'){ }}
+            <span class="layui-badge layui-bg-blue">事假</span>
+        {{#  } else if(d.type === '病假'){ }}
+            <span class="layui-badge layui-bg-red">病假</span>
+        {{#  } else if(d.type === '年假'){ }}
+            <span class="layui-badge layui-bg-green">年假</span>
+        {{#  } }}
+    </script>
+
+    <!-- 详情模板 -->
+    <script type="text/html" id="detailTpl">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div class="detail-item">
+                    <span class="detail-label">申请人：</span>
+                    <span class="detail-value">{{d.user.realName}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">请假类型：</span>
+                    <span class="detail-value">
+                        {{#  if(d.type === '事假'){ }}
+                            <span class="layui-badge layui-bg-blue">事假</span>
+                        {{#  } else if(d.type === '病假'){ }}
+                            <span class="layui-badge layui-bg-red">病假</span>
+                        {{#  } else if(d.type === '年假'){ }}
+                            <span class="layui-badge layui-bg-green">年假</span>
+                        {{#  } }}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">开始时间：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.startDate, 'yyyy-MM-dd HH:mm')}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">结束时间：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.endDate, 'yyyy-MM-dd HH:mm')}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">请假原因：</span>
+                    <span class="detail-value">{{d.reason}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">申请时间：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.created, 'yyyy-MM-dd HH:mm')}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">审批状态：</span>
+                    <span class="detail-value">
+                        {{#  if(d.lstatus === '通过'){ }}
+                            <span class="detail-status approved">通过</span>
+                        {{#  } else if(d.lstatus === '驳回'){ }}
+                            <span class="detail-status rejected">驳回</span>
+                        {{#  } }}
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">审批人：</span>
+                    <span class="detail-value">{{d.approver ? d.approver.realName : '未审批'}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">审批时间：</span>
+                    <span class="detail-value">{{layui.util.toDateString(d.approvalTime, 'yyyy-MM-dd HH:mm')}}</span>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['table', 'form', 'util', 'layer', 'laytpl'], function(){
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var util = layui.util;
+            var laytpl = layui.laytpl;
+            var $ = layui.$;
+            
+            // 初始化表格
+            table.render({
+                elem: '#leaveTable',
+                url: '/leave/completedList',
+                page: true,
+                toolbar: true,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'lid', title: 'ID', width: 100, sort: true},
+                    {field: 'user.realName', title: '申请人', width: 100, templet: function(d) {
+                            return d.user ? d.user.realName : '';}},
+                    {field: 'type', title: '请假类型', width: 100, templet: '#typeTpl'},
+                    {field: 'startDate', title: '开始时间', width: 160, sort: true, templet: function (d) {
+                            return util.toDateString(d.startDate, 'yyyy-MM-dd HH:mm');
+                        }},
+                    {field: 'endDate', title: '结束时间', width: 160, sort: true, templet: function (d) {
+                            return util.toDateString(d.endDate, 'yyyy-MM-dd HH:mm');
+                        }},
+                    {field: 'reason', title: '请假原因', width: 180},
+                    {field: 'lstatus', title: '状态', width: 100, templet: '#statusTpl'},
+                    {field: 'approvalTime', title: '审批时间', width: 160, sort: true, templet: function (d) {
+                            return util.toDateString(d.approvalTime, 'yyyy-MM-dd HH:mm');
+                        }},
+                    {title: '操作', toolbar: '#operationBar', width: 100, fixed: 'right'}
+                ]],
+            });
+            
+            // 监听搜索表单提交
+            form.on('submit(searchForm)', function(data){
+                table.reload('leaveTable', {
+                    where: data.field,
+                    page: {
+                        curr: 1
+                    }
+                });
+                return false;
+            });
+            
+            // 监听工具条
+            table.on('tool(leaveTable)', function(obj){
+                var data = obj.data;
+                if(obj.event === 'view'){
+                    // 获取详情数据
+                    $.ajax({
+                        url: '/leave/getDetail/' + data.lid,
+                        type: 'GET',
+                        success: function(res){
+                            if(res.code === 0){
+                                // 使用laytpl渲染详情
+                                var getTpl = document.getElementById('detailTpl').innerHTML;
+                                laytpl(getTpl).render(res.data, function(html){
+                                    layer.open({
+                                        type: 1,
+                                        title: '请假详情',
+                                        area: ['500px', '600px'],
+                                        content: html,
+                                        success: function(layero, index){
+                                            // 弹窗成功后的回调
+                                        }
+                                    });
+                                });
+                            } else {
+                                layer.msg('获取详情失败：' + res.msg);
+                            }
+                        },
+                        error: function(){
+                            layer.msg('获取详情失败，请稍后重试');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

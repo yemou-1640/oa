@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>基本资料-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .user-info-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .layui-form-label {
+            width: 110px;
+        }
+        .layui-input-block {
+            margin-left: 140px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <span class="layui-breadcrumb" lay-separator="/">
+                <a href="javascript:;">首页</a>
+                <a><cite>基本资料</cite></a>
+            </span>
+        </div>
+        
+        <div class="layui-card-body">
+            <div class="user-info-container">
+                <form class="layui-form" lay-filter="userInfoForm">
+                    <input type="hidden" name="uid" th:value="${session.user2.uid}">
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">用户名</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="name" class="layui-input" 
+                                   th:value="${session.user2.name}" lay-verify="required">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">姓名</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="realName" class="layui-input"
+                                   th:value="${session.user2.realName}" lay-verify="required">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">部门</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="department" class="layui-input" 
+                                   th:value="${session.user2.department}" lay-verify="required">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">职位</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="position" class="layui-input" 
+                                   th:value="${session.user2.position}" lay-verify="required">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">入职时间</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="hireDate" id="hireDate" class="layui-input" readonly
+                                   th:value="${#dates.format(session.user2.hireDate, 'yyyy-MM-dd')}">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="updateInfoBtn">保存修改</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.use(['form', 'layer', 'laydate'], function(){
+        var form = layui.form,
+            layer = layui.layer,
+            laydate = layui.laydate,
+            $ = layui.$;
+        
+        // 初始化日期选择器
+        laydate.render({
+            elem: '#hireDate',
+            type: 'date',
+            trigger: 'click'
+        });
+        
+        // 表单提交处理
+        form.on('submit(updateInfoBtn)', function(data){
+            var field = data.field;
+            console.log('提交的表单数据:', field);
+            
+            // 添加日期格式化
+            if(field.hireDate) {
+                field.hireDate = field.hireDate + ' 00:00:00';
+            }
+            
+            // 确保所有必填字段都有值
+            if (!field.name || !field.realName || !field.department || !field.position) {
+                layer.msg('请填写所有必填字段', {icon: 2});
+                return false;
+            }
+            
+            $.ajax({
+                url: '/user/editInfo',
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(field),
+                beforeSend: function(xhr) {
+                    console.log('发送的数据:', JSON.stringify(field));
+                },
+                success: function(res) {
+                    console.log('服务器响应:', res);
+                    if(res.code === 0) {
+                        layer.msg('资料更新成功', {
+                            icon: 1,
+                            time: 2000,
+                            shade: [0.3, '#000']
+                        }, function(){
+                            // 更新顶部导航栏的用户名
+                            if(window.parent && window.parent !== window) {
+                                window.parent.document.querySelector('.layui-layout-right cite').innerText = field.name;
+                            }
+                            
+                            layer.msg('个人资料已更新', {
+                                offset: 't',
+                                icon: 1
+                            });
+                        });
+                    } else {
+                        layer.msg(res.msg || '更新失败', {icon: 2});
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('更新失败:', error);
+                    console.error('状态码:', xhr.status);
+                    console.error('响应文本:', xhr.responseText);
+                    layer.msg('网络错误，请重试: ' + error, {icon: 2});
+                }
+            });
+            
+            return false; // 阻止表单默认提交
+        });
+    });
+</script>
+</body>
+</html> 

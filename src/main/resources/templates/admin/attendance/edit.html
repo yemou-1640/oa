@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>编辑考勤记录</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .layui-card-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .layui-card-body {
+            padding: 15px;
+        }
+        .layui-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">编辑考勤记录</div>
+            <div class="layui-card-body">
+                <form class="layui-form" lay-filter="editForm">
+                    <input type="hidden" name="aid" th:value="${attendance.aid}">
+                    <input type="hidden" name="uid" th:value="${attendance.uid}">
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">考勤类型</label>
+                        <div class="layui-input-block">
+                            <select name="type" lay-verify="required">
+                                <option value="上班" th:selected="${attendance.type == '上班'}">上班</option>
+                                <option value="下班" th:selected="${attendance.type == '下班'}">下班</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">考勤时间</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="time" th:value="${#dates.format(attendance.time, 'yyyy-MM-dd HH:mm')}" 
+                                   class="layui-input" id="time" lay-verify="required" placeholder="请选择考勤时间">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">考勤日期</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="date" th:value="${#dates.format(attendance.date, 'yyyy-MM-dd')}" 
+                                   class="layui-input" id="date" lay-verify="required" placeholder="请选择考勤日期">
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn" lay-submit lay-filter="editForm">保存修改</button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['form', 'laydate', 'layer'], function(){
+            var form = layui.form;
+            var laydate = layui.laydate;
+            var layer = layui.layer;
+            var $ = layui.$;
+            
+            // 初始化日期时间选择器
+            laydate.render({
+                elem: '#time',
+                type: 'datetime',
+                format: 'yyyy-MM-dd HH:mm'
+            });
+            
+            laydate.render({
+                elem: '#date',
+                type: 'date',
+                format: 'yyyy-MM-dd'
+            });
+            
+            // 监听表单提交
+            form.on('submit(editForm)', function(data){
+                var field = data.field;
+                // 转换日期为时间戳
+                if (field.time) {
+                    field.time = new Date(field.time.replace(/-/g, '/')).getTime();
+                }
+                if (field.date) {
+                    field.date = new Date(field.date.replace(/-/g, '/')).getTime();
+                }
+                
+                // 发送AJAX请求保存修改
+                $.ajax({
+                    url: '/attendance/edit',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(field),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('修改成功', {
+                                icon: 1,
+                                time: 1000
+                            }, function(){
+                                // 关闭当前页面
+                                var index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                // 刷新父页面表格
+                                parent.layui.table.reload('attendanceTable');
+                                // 在父页面顶部显示成功提示
+                                parent.layer.msg('考勤信息已成功更新', {
+                                    offset: 't',
+                                    icon: 1
+                                });
+                            });
+                        } else {
+                            layer.msg('修改失败：' + res.msg, {icon: 2});
+                        }
+                    },
+                    error: function(){
+                        layer.msg('系统错误，请稍后重试', {icon: 2});
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html> 

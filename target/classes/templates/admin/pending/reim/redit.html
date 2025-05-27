@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>报销申请编辑</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            padding: 20px;
+        }
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+        .layui-input-block {
+            margin-left: 120px;
+        }
+        .layui-form-label {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="reimbursementForm">
+        <input type="hidden" name="rid" th:value="${reimbursement.rid}">
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">报销类型</label>
+            <div class="layui-input-block">
+                <select name="type" required lay-verify="required">
+                    <option value="">请选择报销类型</option>
+                    <option value="差旅费" th:selected="${reimbursement.type == '差旅费'}">差旅费</option>
+                    <option value="交通费" th:selected="${reimbursement.type == '交通费'}">交通费</option>
+                    <option value="餐饮费" th:selected="${reimbursement.type == '餐饮费'}">餐饮费</option>
+                    <option value="办公用品" th:selected="${reimbursement.type == '办公用品'}">办公用品</option>
+                    <option value="其他" th:selected="${reimbursement.type == '其他'}">其他</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">报销金额</label>
+            <div class="layui-input-block">
+                <input type="number" name="amount" required lay-verify="required|number" 
+                       placeholder="请输入报销金额" autocomplete="off" class="layui-input"
+                       th:value="${reimbursement.amount}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">报销说明</label>
+            <div class="layui-input-block">
+                <textarea name="description" placeholder="请输入报销说明" class="layui-textarea"
+                          th:text="${reimbursement.description}"></textarea>
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="reimbursementForm">提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script src="/js/jquery-3.6.0.min.js"></script>
+    <script th:inline="none">
+        layui.use(['form', 'layer'], function(){
+            var form = layui.form;
+            var layer = layui.layer;
+            var $ = layui.$;
+            
+            //监听提交
+            form.on('submit(reimbursementForm)', function(data){
+                $.ajax({
+                    type: 'post',
+                    url: '/reimbursement/edit',
+                    data: JSON.stringify(data.field),
+                    contentType: 'application/json',
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('修改成功', {
+                                icon: 1,
+                                time: 1000
+                            }, function(){
+                                // 关闭当前iframe层
+                                var index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                // 刷新父页面表格
+                                parent.layui.table.reload('reimbursementTable');
+                            });
+                        } else {
+                            layer.msg('修改失败: ' + res.msg, {icon: 2});
+                        }
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html> 

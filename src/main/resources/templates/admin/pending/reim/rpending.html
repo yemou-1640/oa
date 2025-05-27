@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>报销待审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-card {
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+        }
+        .layui-card-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .layui-card-body {
+            padding: 15px;
+        }
+        .layui-table-tool {
+            padding: 10px 15px;
+        }
+        .layui-badge {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">报销待审批
+                <a href="/admin/toPending" class="layui-btn layui-btn-primary layui-btn-sm">
+                   返回
+                </a>
+            </div>
+            <div class="layui-card-body">
+                <!-- 搜索栏 -->
+                <form class="layui-form" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请人</label>
+                            <div class="layui-input-inline">
+                                <input type="text" name="realName" placeholder="请输入申请人" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+
+                        <div class="layui-inline">
+                            <button class="layui-btn" lay-submit lay-filter="searchForm">
+                                <i class="layui-icon layui-icon-search"></i> 搜索
+                            </button>
+                            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- 数据表格 -->
+                <table id="reimbursementTable" lay-filter="reimbursementTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作列模板 -->
+    <script type="text/html" id="operationBar">
+        <a class="layui-btn layui-btn-xs" lay-event="approve">审批</a>
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+    <!-- 报销类型模板 -->
+    <script type="text/html" id="typeTpl">
+        {{#  if(d.type === '差旅费'){ }}
+        <span class="layui-badge layui-bg-blue">差旅费</span>
+        {{#  } else if(d.type === '办公用品'){ }}
+        <span class="layui-badge layui-bg-orange">办公用品</span>
+        {{#  } else if(d.type === '交通费'){ }}
+        <span class="layui-badge layui-bg-orange">交通费</span>
+        {{#  } else if(d.type === '餐饮费'){ }}
+        <span class="layui-badge layui-bg-orange">餐饮费</span>
+        {{#  } else if(d.type === '其他'){ }}
+        <span class="layui-badge layui-bg-gray">其他</span>
+        {{#  } }}
+    </script>
+
+    <!-- 状态列模板 -->
+    <script type="text/html" id="statusTpl">
+        <span class="layui-badge layui-bg-orange">审核中</span>
+    </script>
+
+    <!-- 金额列模板 -->
+    <script type="text/html" id="amountTpl">
+        <span style="color: #FF5722;">￥{{d.amount}}</span>
+    </script>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['table', 'form', 'util', 'layer'], function(){
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var util = layui.util;
+            var $ = layui.$;
+            
+            // 初始化表格
+            table.render({
+                elem: '#reimbursementTable',
+                url: '/reimbursement/pendingList',
+                page: true,
+                toolbar: true,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'rid', title: 'ID', width: 100, sort: true},
+                    {field: 'user.realName', title: '申请人', width: 100, templet: function(d) {
+                        return d.user ? d.user.realName : '';
+                    }},
+                    {field: 'amount', title: '金额', width: 120, templet: '#amountTpl', sort: true},
+                    {field: 'type', title: '报销类型', width: 120, templet: '#typeTpl'},
+                    {field: 'description', title: '报销说明', width: 220},
+                    {field: 'created', title: '申请时间', width: 160, sort: true, templet: function(d) {
+                        return util.toDateString(d.created, 'yyyy-MM-dd HH:mm');
+                    }},
+                    {field: 'status', title: '状态', width: 100, templet: '#statusTpl'},
+                    {title: '操作', toolbar: '#operationBar', width: 180, fixed: 'right'}
+                ]]
+            });
+            
+            // 监听搜索表单提交
+            form.on('submit(searchForm)', function(data){
+                table.reload('reimbursementTable', {
+                    where: data.field,
+                    page: {
+                        curr: 1
+                    }
+                });
+                return false;
+            });
+            
+            // 监听工具条
+            table.on('tool(reimbursementTable)', function(obj){
+                var data = obj.data;
+                console.log(data.rid)
+                if(obj.event === 'approve'){
+                    layer.open({
+                        type: 2,
+                        title: '审批报销申请',
+                        area: ['500px', '550px'],
+                        content: '/reimbursement/toApprove/' + data.rid,
+                        end: function(){
+                            // 刷新表格
+                            table.reload('reimbursementTable');
+                        }
+                    });
+                } else if(obj.event === 'edit'){
+                    layer.open({
+                        type: 2,
+                        title: '详情编辑',
+                        area: ['500px', '550px'],
+                        content: '/reimbursement/toPenEdit/' + obj.data.rid
+                    });
+                } else if(obj.event === 'del'){
+                    layer.confirm('确认删除该申请吗？', function(index){
+                        $.ajax({
+                            type: 'post',
+                            url: '/reimbursement/delete/' + data.rid,
+                            success: function(res){
+                                if(res.code === 0){
+                                    table.reload('reimbursementTable');
+                                    layer.msg('删除成功');
+                                } else {
+                                    layer.msg('删除失败: ' + res.msg);
+                                }
+                            }
+                        });
+                        layer.close(index);
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

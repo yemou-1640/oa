@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>权限管理-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .layui-table-cell {
+            height: auto;
+            padding: 5px 15px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <a href="javascript:;" class="layui-btn layui-btn-primary layui-btn-sm" id="btnRefresh">
+                <i class="layui-icon layui-icon-refresh"></i> 刷新
+            </a>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="layui-card-body">
+            <div class="layui-form layuiadmin-card-header-auto">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">权限名称：</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="search_pname" placeholder="请输入权限名称" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layuiadmin-btn-list" id="btnSearch">
+                            <i class="layui-icon layui-icon-search"></i>查询
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <table id="permissionTable" lay-filter="permissionTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layuiadmin-btn-list" lay-event="add">添加权限</button>
+    </div>
+</script>
+
+<script type="text/html" id="rowBar">
+    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.config({
+        base: '/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['table', 'form', 'laytpl'], function(){
+        var table = layui.table,
+            laytpl = layui.laytpl,
+            form = layui.form,
+            layer = layui.layer,
+            $ = layui.$;
+
+        // 初始化表格
+        table.render({
+            elem: '#permissionTable',
+            url: '/permission/getList',
+            page: true,
+            toolbar: '#toolbarDemo',
+            cols: [
+                [
+                    {field: 'pid', title: '权限ID', width: 100, sort: true},
+                    {field: 'permission.pname', title: '权限名称', width: 150, templet: function(d) {
+                        return d.permission ? d.permission.pname : '';
+                    }},
+                    {field: 'uid', title: '用户ID', width: 100},
+                    {field: 'realName', title: '姓名', width: 100},
+                    {field: 'department', title: '部门', width: 100},
+                    {field: 'position', title: '职位', width: 100},
+                    {fixed: 'right', title: '操作', toolbar: '#rowBar', width: 240}
+                ]
+            ]
+        });
+
+        // 工具栏事件
+        table.on('toolbar(permissionTable)', function(obj){
+            if(obj.event === 'add'){
+                layer.open({
+                    type: 2,
+                    title: '添加权限',
+                    area: ['500px', '300px'],
+                    content: '/permission/toAdd',
+                    success: function(layero, index){
+                        // 弹层成功回调
+                    }
+                });
+            }
+        });
+
+        // 行工具事件
+        table.on('tool(permissionTable)', function(obj){
+            var data = obj.data;
+            console.log("权限操作:", obj.data.pid);
+            
+            if(obj.event === 'edit'){
+                layer.open({
+                    type: 2,
+                    title: '编辑权限',
+                    area: ['500px', '300px'],
+                    content: '/permission/toEdit/' + obj.data.uid
+                });
+            }else if(obj.event === 'del'){
+                // 删除逻辑
+                layer.confirm('确认删除该权限吗？', function () {
+                    $.ajax({
+                        type: 'post',
+                        url: '/permission/delete/' + data.pid,
+                        success: function (res) {
+                            if (res.code === 0) {
+                                table.reload('permissionTable');
+                                layer.msg('删除成功');
+                            } else {
+                                layer.msg('删除失败: ' + res.msg);
+                            }
+                        }
+                    });
+                });
+            }
+        });
+
+        // 搜索功能
+        $('#btnSearch').click(function(){
+            doSearch();
+        });
+        
+        // 监听回车键
+        $('#search_pname').keydown(function(e){
+            if(e.keyCode === 13){
+                doSearch();
+                return false; // 阻止默认行为
+            }
+        });
+        
+        // 刷新按钮
+        $('#btnRefresh').click(function(){
+            table.reload('permissionTable');
+        });
+        
+        // 搜索方法
+        function doSearch(){
+            var searchName = $('#search_pname').val();
+            // 显示加载中
+            var loadIndex = layer.load(1, {shade: [0.1,'#fff']});
+            
+            table.reload('permissionTable', {
+                where: {
+                    pname: searchName
+                },
+                page: {
+                    curr: 1 // 从第一页开始
+                },
+                done: function(){
+                    layer.close(loadIndex);
+                    // 搜索结果提示
+                    if(searchName) {
+                        layer.msg('查询"' + searchName + '"的结果');
+                    }
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

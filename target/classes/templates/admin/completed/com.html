@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>已办审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        /* 自定义样式 */
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+        .layui-card {
+            transition: all 0.3s;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+            border: none;
+        }
+        .layui-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 16px 0 rgba(0,0,0,0.15);
+        }
+        .layui-card-header {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        .layui-card-body {
+            padding: 30px;
+            text-align: center;
+            background: #fff;
+            border-radius: 0 0 8px 8px;
+        }
+        .card-description {
+            font-size: 14px;
+            color: #666;
+            margin: 15px 0 25px;
+            line-height: 1.6;
+        }
+        a{
+            text-decoration: none;
+        }
+        .layui-btn {
+            width: 120px;
+            border-radius: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(108, 99, 255, 0.2);
+        }
+        .layui-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+        }
+        @media (max-width: 768px) {
+            .layui-col-md4 {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-fluid" style="padding: 20px;">
+        <div class="layui-row layui-col-space15">
+            <!-- 请假已办 -->
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">请假已办</div>
+                    <div class="layui-card-body">
+                        <div class="card-description">
+                            当前有 <span style="color: #409EFF; font-weight: bold;" th:text="${leaveCompletedCount}">0</span> 条已完成的请假审批
+                        </div>
+                        <a href="/leave/toCompleted" class="layui-btn layui-btn-normal layui-icon layui-icon-form">查看详情</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 出差已办 -->
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">出差已办</div>
+                    <div class="layui-card-body">
+                        <div class="card-description">
+                            当前有 <span style="color: #67C23A; font-weight: bold;" th:text="${businessCompletedCount}">0</span> 条已完成的出差审批
+                        </div>
+                        <a href="/business/toCompleted" class="layui-btn layui-btn-normal layui-icon layui-icon-form">查看详情</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 报销已办 -->
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header">报销已办</div>
+                    <div class="layui-card-body">
+                        <div class="card-description">
+                            当前有 <span style="color: #E6A23C; font-weight: bold;" th:text="${reimbursementCompletedCount}">0</span> 条已完成的报销审批
+                        </div>
+                        <a href="/reimbursement/toCompleted" class="layui-btn layui-btn-normal layui-icon layui-icon-form">查看详情</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['layer'], function(){
+            var layer = layui.layer;
+        });
+    </script>
+</body>
+</html>

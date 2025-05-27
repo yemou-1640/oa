@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑用户-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            padding: 20px;
+        }
+        .layui-form-label {
+            width: 110px;
+        }
+        .layui-input-block {
+            margin-left: 140px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <form class="layui-form" lay-filter="userEditForm">
+                <input type="hidden" name="uid" th:value="${user.uid}" readonly>
+                
+                <div class="layui-form-item">
+                    <label class="layui-form-label">用户名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="name" class="layui-input" 
+                               th:value="${user.name}" lay-verify="required" placeholder="请输入用户名">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="realName" class="layui-input"
+                               th:value="${user.realName}" lay-verify="required" placeholder="请输入姓名">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">密码</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="password" class="layui-input"
+                               th:value="${user.password}" lay-verify="required" placeholder="请输入密码">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">部门</label>
+                    <div class="layui-input-block">
+                        <select name="department" lay-verify="required" id="departmentSelect">
+                            <option value="">请选择部门</option>
+                            <!-- 部门选项将通过Ajax动态加载 -->
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item">
+                    <label class="layui-form-label">职位</label>
+                    <div class="layui-input-block">
+                        <select name="position" lay-verify="required">
+                            <option value="">请选择类型</option>
+                            <option th:each="position : ${T(com.yemou.oa.constant.PositionType).values()}"
+                                    th:value="${position}"
+                                    th:text="${position}"
+                                    th:selected="${user.position == position}"></option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item">
+                    <label class="layui-form-label">入职日期</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="hireDate" id="hireDate" class="layui-input" 
+                               th:value="${#dates.format(user.hireDate, 'yyyy-MM-dd')}" placeholder="请选择入职日期">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <select name="ustatus" lay-verify="required">
+                            <option value="">请选择类型</option>
+                            <option th:each="ustatus : ${T(com.yemou.oa.constant.UserStatusType).values()}"
+                                    th:value="${ustatus}"
+                                    th:text="${ustatus}"
+                                    th:selected="${user.ustatus == ustatus}"></option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit lay-filter="userEditSubmit">保存</button>
+                        <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script>
+    layui.config({
+        base: '/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['form', 'layer', 'laydate', 'util'], function(){
+        var form = layui.form,
+            layer = layui.layer,
+            laydate = layui.laydate,
+            $ = layui.$;
+        
+        // 初始化日期选择器
+        laydate.render({
+            elem: '#hireDate',
+            type: 'date',
+            trigger: 'click'
+        });
+
+        // 加载部门下拉框数据
+        $.ajax({
+            url: '/admin/department/list',
+            type: 'GET',
+            success: function (res) {
+                console.log("部门数据:", res);
+                if (res.code === 0 && res.data && res.data.length > 0) {
+                    console.log(res.data);
+                    var html = '<option value="">请选择部门</option>';
+                    // 获取当前用户的部门
+                    var currentDepartment = "[[${user.department}]]";
+                    $.each(res.data, function (index, item) {
+                        // 尝试多种可能的属性名
+                        var deptName = item.dName || item.dname || item.DNAME || (item.d_name) || "未知部门";
+                        // 添加selected属性进行匹配
+                        var selected = (deptName === currentDepartment) ? 'selected' : '';
+                        html += '<option value="' + deptName + '" ' + selected + '>' + deptName + '</option>';
+                    });
+                    $('#departmentSelect').html(html);
+                    
+                    // 获取当前用户的职位和状态
+                    var currentPosition = "[[${user.position}]]";
+                    var currentStatus = "[[${user.ustatus}]]";
+                    console.log("当前职位:", currentPosition);
+                    console.log("当前状态:", currentStatus);
+                    
+                    // 手动设置职位和状态下拉框的值
+                    if(currentPosition && currentPosition !== '') {
+                        $("select[name='position']").val(currentPosition);
+                    }
+                    
+                    if(currentStatus && currentStatus !== '') {
+                        $("select[name='ustatus']").val(currentStatus);
+                    }
+                    
+                    // 重新渲染整个表单
+                    form.render();
+                }
+            }
+        });
+        
+        // 控制台输出当前用户的职位和状态，帮助调试
+        console.log("用户职位:", "[[${user.position}]]");
+        console.log("用户状态:", "[[${user.ustatus}]]");
+        
+        // 表单提交处理
+        form.on('submit(userEditSubmit)', function(data){
+            var field = data.field;
+            
+            $.ajax({
+                url: '/admin/user/update',
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(field),
+                success: function(data) {
+                    console.log(data)
+                    if(data.code === 0) {
+                        layer.msg('用户信息更新成功', {
+                            icon: 1,
+                            time: 1000
+                        }, function(){
+                            // 刷新父页面表格
+                            var index = parent.layer.getFrameIndex(window.name);
+                            parent.layui.table.reload('userTable');
+                            parent.layer.close(index);
+                        });
+                    } else {
+                        layer.msg('更新失败', {icon: 2});
+                    }
+                },
+                error: function() {
+                    layer.msg('网络错误，请重试', {icon: 2});
+                }
+            });
+            
+            return false; // 阻止表单默认提交
+        });
+    });
+</script>
+</body>
+</html> 

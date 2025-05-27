@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>报销审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            padding: 20px;
+        }
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+        .layui-input-block {
+            margin-left: 120px;
+        }
+        .layui-form-label {
+            width: 100px;
+        }
+        .info-item {
+            margin-bottom: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="approveForm">
+        <input type="hidden" name="rid" th:value="${reimbursement.rid}">
+        
+        <div class="layui-form-item">
+            <div class="info-item">
+                <span class="info-label">申请人：</span>
+                <span th:text="${reimbursement.user.realName}"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">报销类型：</span>
+                <span th:text="${reimbursement.type}"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">报销金额：</span>
+                <span th:text="${reimbursement.amount}"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">报销说明：</span>
+                <span th:text="${reimbursement.description}"></span>
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">审批结果</label>
+            <div class="layui-input-block">
+                <input type="radio" name="rstatus" value="1" title="通过" checked>
+                <input type="radio" name="rstatus" value="2" title="不通过">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="approveForm">提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['form', 'layer'], function(){
+            var form = layui.form;
+            var layer = layui.layer;
+            var $ = layui.$;
+            
+            //监听提交
+            form.on('submit(approveForm)', function(data){
+                var rid = $('input[name="rid"]').val();
+                $.ajax({
+                    type: 'post',
+                    url: '/reimbursement/approve',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        rid: rid,
+                        rstatus: '通过'
+                    }),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('审批成功', {
+                                icon: 1,
+                                time: 1000,
+                                shade: [0.3, '#000']
+                            }, function(){
+                                // 关闭当前iframe层
+                                var index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                // 刷新父页面表格
+                                parent.layui.table.reload('reimbursementTable');
+                                parent.layer.msg('报销申请已通过', {
+                                    offset: 't',
+                                    icon: 1
+                                });
+                            });
+                        } else {
+                            layer.msg('审批失败: ' + res.msg, {icon: 2});
+                        }
+                    }
+                });
+                return false;
+            });
+
+            // 驳回审批
+            form.on('submit(rejectBtn)', function(data){
+                var rid = $('input[name="rid"]').val();
+                $.ajax({
+                    url: '/reimbursement/approve',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        rid: rid,
+                        rstatus: '驳回'
+                    }),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('已驳回申请', {
+                                icon: 1,
+                                time: 1000,
+                                shade: [0.3, '#000']
+                            }, function(){
+                                parent.layui.table.reload('reimbursementTable');
+                                parent.layer.closeAll();
+                                parent.layer.msg('报销申请已驳回', {
+                                    offset: 't',
+                                    icon: 1
+                                });
+                            });
+                        } else {
+                            layer.msg('操作失败：' + res.msg, {icon: 2});
+                        }
+                    },
+                    error: function(xhr){
+                        layer.msg('操作失败，请稍后重试', {icon: 2});
+                        console.error('Error:', xhr);
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,146 @@
+/* reimbursement.css - 报销申请页面样式 */
+
+/* 全局容器布局 */
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 表单部分 */
+.form-section h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #2ecc71; /* 主题色调整为绿色 */
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #34495e;
+    font-weight: 600;
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #2ecc71; /* 聚焦边框色调整为绿色 */
+    outline: none;
+}
+
+/* 提交按钮 */
+.btn-primary {
+    background-color: #2ecc71; /* 按钮主题色为绿色 */
+    color: white;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #27ae60; /* 悬停色加深 */
+}
+
+/* 申请记录表格 */
+.records-section h2 {
+    color: #2c3e50;
+    margin-top: 30px;
+    border-bottom: 2px solid #2ecc71; /* 标题下划线为绿色 */
+    padding-bottom: 10px;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.records-table th {
+    background-color: #f8f9fa;
+    color: #34495e;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.records-table td {
+    padding: 12px;
+    border-bottom: 1px solid #ecf0f1;
+    color: #7f8c8d;
+}
+
+.records-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 状态标签 */
+.status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.status-approved {
+    background-color: #27ae60; /* 绿色 */
+    color: white;
+}
+
+.status-pending {
+    background-color: #f1c40f; /* 黄色 */
+    color: white;
+}
+
+/* 操作链接 */
+.record-link {
+    color: #2ecc71; /* 绿色 */
+    text-decoration: none;
+    margin-right: 8px;
+    transition: color 0.3s;
+}
+
+.record-link:hover {
+    color: #27ae60; /* 悬停色加深 */
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+        margin: 10px;
+    }
+
+    .records-table th,
+    .records-table td {
+        padding: 8px;
+        font-size: 14px;
+    }
+
+    .records-table td:nth-child(4),
+    .records-table th:nth-child(4) {
+        display: none; /* 移动端隐藏票据信息列 */
+    }
+}

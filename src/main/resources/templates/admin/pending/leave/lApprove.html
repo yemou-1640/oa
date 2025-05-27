@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>请假审批</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            padding: 20px;
+        }
+        .layui-form-label {
+            width: 120px;
+        }
+        .layui-input-block {
+            margin-left: 150px;
+        }
+        .info-item {
+            margin-bottom: 15px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .approve-buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="approveForm">
+        <input type="hidden" name="lid" th:value="${leave.lid}">
+        
+        <div class="info-item">
+            <label class="info-label">申请人：</label>
+            <span class="info-value" th:text="${leave.user.realName}"></span>
+        </div>
+        
+        <div class="info-item">
+            <label class="info-label">请假类型：</label>
+            <span class="info-value" th:text="${leave.type}"></span>
+        </div>
+        
+        <div class="info-item">
+            <label class="info-label">开始时间：</label>
+            <span class="info-value" th:text="${#dates.format(leave.startDate, 'yyyy-MM-dd HH:mm')}"></span>
+        </div>
+        
+        <div class="info-item">
+            <label class="info-label">结束时间：</label>
+            <span class="info-value" th:text="${#dates.format(leave.endDate, 'yyyy-MM-dd HH:mm')}"></span>
+        </div>
+        
+        <div class="info-item">
+            <label class="info-label">请假原因：</label>
+            <span class="info-value" th:text="${leave.reason}"></span>
+        </div>
+        
+        <div class="info-item">
+            <label class="info-label">申请时间：</label>
+            <span class="info-value" th:text="${#dates.format(leave.created, 'yyyy-MM-dd HH:mm')}"></span>
+        </div>
+        
+        <div class="approve-buttons">
+            <button class="layui-btn layui-btn-normal" lay-submit lay-filter="approveBtn">
+                <i class="layui-icon layui-icon-ok"></i> 通过
+            </button>
+            <button class="layui-btn layui-btn-danger" lay-submit lay-filter="rejectBtn">
+                <i class="layui-icon layui-icon-close"></i> 驳回
+            </button>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script>
+    layui.use(['form', 'layer'], function(){
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+        
+        // 通过审批
+        form.on('submit(approveBtn)', function(data){
+            var lid = $('input[name="lid"]').val();
+            $.ajax({
+                url: '/leave/approve',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    lid: lid,
+                    lstatus: '通过'
+                }),
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('审批通过成功', {
+                            icon: 1,
+                            time: 1000,
+                            shade: [0.3, '#000']
+                        }, function(){
+                            parent.layui.table.reload('leaveTable');
+                            parent.layer.closeAll();
+                            parent.layer.msg('请假申请已通过', {
+                                offset: 't',
+                                icon: 1
+                            });
+                        });
+                    } else {
+                        layer.msg('审批失败：' + res.msg, {icon: 2});
+                    }
+                },
+                error: function(xhr){
+                    layer.msg('审批失败，请稍后重试', {icon: 2});
+                    console.error('Error:', xhr);
+                }
+            });
+            return false;
+        });
+        
+        // 驳回审批
+        form.on('submit(rejectBtn)', function(data){
+            var lid = $('input[name="lid"]').val();
+            $.ajax({
+                url: '/leave/approve',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    lid: lid,
+                    lstatus: '驳回'
+                }),
+                success: function(res){
+                    if(res.code === 0){
+                        layer.msg('已驳回申请', {
+                            icon: 1,
+                            time: 1000,
+                            shade: [0.3, '#000']
+                        }, function(){
+                            parent.layui.table.reload('leaveTable');
+                            parent.layer.closeAll();
+                            parent.layer.msg('请假申请已驳回', {
+                                offset: 't',
+                                icon: 1
+                            });
+                        });
+                    } else {
+                        layer.msg('操作失败：' + res.msg, {icon: 2});
+                    }
+                },
+                error: function(xhr){
+                    layer.msg('操作失败，请稍后重试', {icon: 2});
+                    console.error('Error:', xhr);
+                }
+            });
+            return false;
+        });
+    });
+    </script>
+</body>
+</html>

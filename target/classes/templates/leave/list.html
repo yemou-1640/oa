@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>请假记录查询-OA办公系统</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <link th:href="@{/layuiadmin/style/admin.css}" rel="stylesheet">
+    <style>
+        .layui-table-cell {
+            height: auto;
+            padding: 5px 15px;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: white;
+        }
+        .status-approved { background: #009688; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-pending { background: #FFB800; color: white; padding: 2px 8px; border-radius: 3px; }
+        .status-rejected { background-color: #FF5722; color: white; padding: 2px 8px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <!-- 导航链接 -->
+        <div class="layui-card-header">
+            <a href="/leave/toLeave" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-form"></i> 返回申请
+            </a>
+        </div>
+
+        <!-- 数据表格-->
+        <div class="layui-card-body">
+            <table id="leaveTable" lay-filter="leaveTable"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 状态模板 -->
+<script type="text/html" id="statusTpl">
+    {{# if(d.lstatus === '审核中'){ }}
+    <span class="status-pending">审核中</span>
+    {{# } else if(d.lstatus === '通过'){ }}
+    <span class="status-approved">通过</span>
+    {{# } else if(d.lstatus === '驳回'){ }}
+    <span class="status-rejected">驳回</span>
+    {{# } }}
+</script>
+
+<!-- 操作列模板修改为编辑按钮 -->
+<script type="text/html" id="operateBar">
+    {{# if(d.lstatus === 'PENDING' || d.lstatus === '审核中'){ }}
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    {{# } }}
+</script>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.config({
+        base: '/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['table', 'util','form','index'], function() {
+        var $ = layui.$;
+
+        var table = layui.table,
+            util = layui.util,
+            form = layui.form,
+            layer = layui.layer;
+
+
+        // 初始化表格（自动加载所有数据）
+        table.render({
+            elem: '#leaveTable',
+            url: '/leave/getList',
+            page: true,
+            initSort: {
+                field: 'lid',  // 默认按lid降序
+                type: 'desc'
+            },
+            request: {
+                pageName: 'page',
+                limitName: 'size'
+            },
+            cols: [[
+                {field: 'lid', title: 'ID', width: 80, sort: true},
+                {field: 'type', title: '类型', width: 120},
+                {
+                    field: 'startDate', title: '开始时间', templet: function (d) {
+                        return util.toDateString(d.startDate, 'yyyy-MM-dd HH:mm');
+                    }, sort: true
+                },
+                {
+                    field: 'endDate', title: '结束时间', templet: function (d) {
+                        return util.toDateString(d.endDate, 'yyyy-MM-dd HH:mm');
+                    }, sort: true
+                },
+                {
+                    field: 'lstatus',
+                    title: '状态',
+                    templet: '#statusTpl'
+                },
+                {
+                    field: 'created', title: '申请时间', templet: function (d) {
+                        return util.toDateString(d.created, 'yyyy-MM-dd HH:mm');
+                    }, sort: true
+                },
+                {fixed: 'right', title: '操作', toolbar: '#operateBar', width: 150}
+            ]]
+        });
+
+        // 监听工具条操作（保留删除和编辑功能）
+        table.on('tool(leaveTable)', function (obj) {
+            var data = obj.data;
+            var util = layui.util;
+
+            if (obj.event === 'del') {
+
+                layer.confirm('确认删除该记录吗？', function () {
+                    $.ajax({
+                        type: 'post',
+                        url: '/leave/delete/' + data.lid, // ajax请求路径
+                        success: function (res) {
+                            console.log(res)
+                            if (res.code === 0) {
+                                table.reload('leaveTable');  // 删除后刷新表格
+                                layer.msg('删除成功');
+                            }
+                        }
+                    });
+                })
+            } else if (obj.event === 'edit') {
+                console.log("edit for:" + obj.data.lid);
+                console.log(obj.data)
+                // 弹出编辑表单
+                layer.open({
+                    type: 2,
+                    id: 'LAY_layuipro',
+                    title: '编辑请假申请',
+                    area: ['600px', '500px'],
+                    content: '/leave/toEdit/' + obj.data.lid,
+                    success: function (layero) {
+                        console.log('完成修改');
+                        var btn = layero.find('.layui-layer-btn');
+                    }
+                });
+            }
+        });
+
+    })
+
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑工资记录</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <form class="layui-form" lay-filter="salaryForm">
+        <input type="hidden" name="sid" th:value="${salary.sid}">
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">员工</label>
+            <div class="layui-input-block">
+                <select name="uid" lay-verify="required" lay-search>
+                    <option value="">请选择员工</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">基本工资</label>
+            <div class="layui-input-block">
+                <input type="number" name="baseSalary" required lay-verify="required|number" placeholder="请输入基本工资" autocomplete="off" class="layui-input" th:value="${salary.baseSalary}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">奖金</label>
+            <div class="layui-input-block">
+                <input type="number" name="bonus" required lay-verify="required|number" placeholder="请输入奖金" autocomplete="off" class="layui-input" th:value="${salary.bonus}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">扣除</label>
+            <div class="layui-input-block">
+                <input type="number" name="deduction" required lay-verify="required|number" placeholder="请输入扣除金额" autocomplete="off" class="layui-input" th:value="${salary.deduction}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">发放日期</label>
+            <div class="layui-input-block">
+                <input type="date" name="paymentDate" id="paymentDate" required lay-verify="required" placeholder="请选择发放日期" autocomplete="off" class="layui-input" th:value="${salary.paymentDate}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-block">
+                <textarea name="remarks" placeholder="请输入备注" class="layui-textarea" th:text="${salary.remarks}"></textarea>
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="salarySubmit">提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['form', 'layer', 'laydate'], function(){
+            var form = layui.form;
+            var layer = layui.layer;
+            var laydate = layui.laydate;
+            var $ = layui.$;
+            
+            // 初始化日期选择器
+            laydate.render({
+                elem: '#paymentDate',
+                type: 'date'
+            });
+            
+            // 加载员工列表
+            $.ajax({
+                url: '/user/getList',
+                type: 'GET',
+                success: function(res){
+                    if(res.code === 0){
+                        var html = '<option value="">请选择员工</option>';
+                        res.data.forEach(function(user){
+                            html += '<option value="' + user.uid + '">' + user.realName + '</option>';
+                        });
+                        $('select[name="uid"]').html(html);
+                        // 设置当前选中的员工
+                        $('select[name="uid"]').val('[[${salary.uid}]]');
+                        form.render('select');
+                    }
+                }
+            });
+            
+            // 监听提交
+            form.on('submit(salarySubmit)', function(data){
+                $.ajax({
+                    url: '/salary/edit',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data.field),
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('修改成功', {
+                                icon: 1,
+                                time: 1000
+                            }, function(){
+                                // 刷新父页面表格
+                                parent.layui.table.reload('salaryTable');
+                                // 关闭弹窗
+                                var index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                            });
+                        } else {
+                            layer.msg('修改失败：' + res.msg);
+                        }
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html> 

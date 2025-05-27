@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>出差申请编辑</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .layui-form {
+            padding: 20px;
+        }
+        .layui-form-item {
+            margin-bottom: 20px;
+        }
+        .layui-input-block {
+            margin-left: 120px;
+        }
+        .layui-form-label {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="businessForm">
+        <input type="hidden" name="tid" th:value="${business.tid}">
+        <div class="layui-form-item">
+            <label class="layui-form-label">目的地</label>
+            <div class="layui-input-block">
+                <input type="text" name="destination" required lay-verify="required" 
+                       placeholder="请输入目的地" autocomplete="off" class="layui-input"
+                       th:value="${business.destination}">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">开始时间</label>
+            <div class="layui-input-block">
+                <input type="text" name="startDate" required lay-verify="required" 
+                       placeholder="请选择开始时间" autocomplete="off" class="layui-input"
+                       th:value="${business.startDate}" id="startDate">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <label class="layui-form-label">结束时间</label>
+            <div class="layui-input-block">
+                <input type="text" name="endDate" required lay-verify="required" 
+                       placeholder="请选择结束时间" autocomplete="off" class="layui-input"
+                       th:value="${business.endDate}" id="endDate">
+            </div>
+        </div>
+        
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="businessForm">提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/layuiadmin/layui/layui.js}"></script>
+    <script th:inline="none">
+        layui.use(['form', 'laydate', 'layer'], function(){
+            var form = layui.form;
+            var laydate = layui.laydate;
+            var layer = layui.layer;
+            var $ = layui.$;
+            
+            //日期时间选择器
+            laydate.render({
+                elem: '#startDate',
+                type: 'datetime',
+                format: 'yyyy-MM-dd HH:mm'
+            });
+            laydate.render({
+                elem: '#endDate',
+                type: 'datetime',
+                format: 'yyyy-MM-dd HH:mm'
+            });
+            
+            //监听提交
+            form.on('submit(businessForm)', function(data){
+                var field = data.field;
+
+                // 转换日期为时间戳
+                var startDate = new Date(field.startDate.replace(/-/g, '/')).getTime();
+                var endDate = new Date(field.endDate.replace(/-/g, '/')).getTime();
+
+                field.startDate = startDate;
+                field.endDate = endDate;
+                $.ajax({
+                    type: 'post',
+                    url: '/business/edit',
+                    data: JSON.stringify(data.field),
+                    contentType: 'application/json',
+                    success: function(res){
+                        if(res.code === 0){
+                            layer.msg('修改成功', {
+                                icon: 1,
+                                time: 1000
+                            }, function(){
+                                // 关闭当前iframe层
+                                var index = parent.layer.getFrameIndex(window.name);
+                                parent.layer.close(index);
+                                // 刷新父页面表格
+                                parent.layui.table.reload('businessTable');
+                            });
+                        } else {
+                            layer.msg('修改失败: ' + res.msg, {icon: 2});
+                        }
+                    }
+                });
+                return false;
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>考勤打卡</title>
+    <link th:href="@{/layuiadmin/layui/css/layui.css}" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .time-card {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        #currentTime {
+            font-size: 1.8rem;
+            color: #333;
+            font-family: monospace;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .clock-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #clockInBtn {
+            background: #67C23A;
+            color: white;
+        }
+
+        #clockOutBtn {
+            background: #F56C6C;
+            color: white;
+        }
+        
+        .already-clocked {
+            background: #909399 !important;
+            cursor: not-allowed;
+        }
+
+        .records-table {
+            margin-top: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    
+    <!-- 时间显示 -->
+    <div class="time-card">
+        <div id="currentTime"></div>
+    </div>
+
+    <!-- 打卡按钮 -->
+    <div class="btn-group">
+        <button class="clock-btn" id="clockInBtn">上班打卡</button>
+        <button class="clock-btn" id="clockOutBtn">下班打卡</button>
+    </div>
+
+    <!-- 打卡记录 -->
+    <table class="layui-table records-table">
+        <thead>
+        <tr>
+            <th>类型</th>
+            <th>时间</th>
+        </tr>
+        </thead>
+        <tbody id="recordBody">
+        <!-- 动态数据 -->
+        </tbody>
+    </table>
+</div>
+
+<script th:src="@{/layuiadmin/layui/layui.js}"></script>
+<script th:inline="none">
+    layui.use(['util', 'layer'], function(){
+        var util = layui.util,
+            layer = layui.layer,
+            $ = layui.$;
+
+        // 实时时间显示
+        function updateTime() {
+            $('#currentTime').text(util.toDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'));
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // 打卡功能
+        $('.clock-btn').click(function(){
+            // 如果按钮已经处于已打卡状态，则不处理
+            if ($(this).hasClass('already-clocked')) {
+                layer.msg('今天已经打过卡了', {icon: 0});
+                return;
+            }
+            
+            const type = $(this).is('#clockInBtn') ? '上班' : '下班';
+            const btnText = $(this).is('#clockInBtn') ? '上班打卡' : '下班打卡';
+            const clockedText = $(this).is('#clockInBtn') ? '已签到' : '已签退';
+            const btn = $(this);
+
+            btn.prop('disabled', true);
+            $.ajax({
+                url: '/attendance/clock',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ type }),
+                success: function(res) {
+                    if(res.code === 0) {
+                        layer.msg('打卡成功', {icon: 1});
+                        // 更改按钮样式和文字
+                        btn.addClass('already-clocked');
+                        btn.text(clockedText);
+                        loadRecords();
+                    } else {
+                        layer.msg(res.msg || "打卡失败", {icon: 2});
+                    }
+                },
+                error: function() {
+                    layer.msg('网络错误，请重试', {icon: 2});
+                },
+                complete: function() {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // 加载记录
+        function loadRecords() {
+            $.ajax({
+                url: '/attendance/records',
+                type: 'GET',
+                success: function(res) {
+                    if (res.code === 0) {
+                        var html = '';
+                        res.data.forEach(function(record) {
+                            html += '<tr>'
+                                + '<td>' + record.type + '</td>'
+                                + '<td>' + util.toDateString(new Date(record.time), 'HH:mm:ss') + '</td>'
+                                + '</tr>';
+                        });
+                        $('#recordBody').html(html);
+                        
+                        // 检查今日是否已打卡，如有则更新按钮状态
+                        var hasClockIn = false;
+                        var hasClockOut = false;
+                        
+                        res.data.forEach(function(record) {
+                            if (record.type === '签到') {
+                                hasClockIn = true;
+                                $('#clockInBtn').addClass('already-clocked').text('已签到');
+                            }
+                            if (record.type === '签退') {
+                                hasClockOut = true;
+                                $('#clockOutBtn').addClass('already-clocked').text('已签退');
+                            }
+                        });
+                    } else {
+                        layer.msg(res.msg || '获取记录失败', {icon: 2});
+                    }
+                },
+                error: function() {
+                    layer.msg('网络错误，请重试', {icon: 2});
+                }
+            });
+        }
+        
+        // 首次加载页面时获取今日打卡记录
+        loadRecords();
+    });
+</script>
+</body>
+</html>
